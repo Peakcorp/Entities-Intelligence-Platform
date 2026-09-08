@@ -1,6 +1,12 @@
 import Link from "next/link";
+import { AlertTriangle } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { getEntityBySlug } from "@/lib/entities";
+import { getExecutiveOverview } from "@/lib/supplyx";
+import { PipelineFunnelChart } from "@/components/charts/pipeline-funnel-chart";
+
+const currency = new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 });
 
 export default async function EntityOverviewPage({
   params,
@@ -30,23 +36,99 @@ export default async function EntityOverviewPage({
     );
   }
 
-  return (
-    <div className="mx-auto max-w-7xl px-6 py-10">
-      <h1 className="text-2xl font-semibold tracking-tight">{entity.name} Overview</h1>
-      <p className="mt-1 text-sm text-muted-foreground">
-        The full Executive Overview (KPI tiles, pipeline funnel, activity heatmap, urgency
-        flags) ships in Phase 3, once email ingestion and AI processing are live.
-      </p>
+  const { pipelineValue, activeDeals, funnelCounts, atRiskClients, urgentEmails } =
+    await getExecutiveOverview(entity.id);
 
-      <Card className="mt-6">
+  return (
+    <div className="mx-auto max-w-7xl space-y-6 px-6 py-8">
+      <div>
+        <h1 className="text-2xl font-semibold tracking-tight">{entity.name} Overview</h1>
+        <p className="mt-1 text-sm text-muted-foreground">Executive summary across the procurement pipeline.</p>
+      </div>
+
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium text-muted-foreground">Active deals</CardTitle>
+          </CardHeader>
+          <CardContent className="text-2xl font-semibold">{activeDeals}</CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium text-muted-foreground">Pipeline value</CardTitle>
+          </CardHeader>
+          <CardContent className="text-2xl font-semibold">{currency.format(pipelineValue)}</CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium text-muted-foreground">At-risk clients</CardTitle>
+          </CardHeader>
+          <CardContent className="text-2xl font-semibold">{atRiskClients.length}</CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium text-muted-foreground">Urgent emails (≥8)</CardTitle>
+          </CardHeader>
+          <CardContent className="text-2xl font-semibold">{urgentEmails.length}</CardContent>
+        </Card>
+      </div>
+
+      {atRiskClients.length > 0 && (
+        <Card className="border-red-200 bg-red-50/50 dark:border-red-900/50 dark:bg-red-950/20">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-base text-red-700 dark:text-red-400">
+              <AlertTriangle className="size-4" />
+              Clients needing attention
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-2">
+            {atRiskClients.map((row) => (
+              <Link
+                key={row.client_id}
+                href={`/${entity.slug}/clients/${row.client_id}`}
+                className="flex items-center justify-between rounded-md border border-red-200 bg-white px-3 py-2 text-sm hover:border-red-300 dark:border-red-900/50 dark:bg-neutral-900"
+              >
+                <span className="font-medium">{row.clients?.name}</span>
+                <Badge variant="destructive">
+                  {row.status === "needs_immediate_attention" ? "Needs Immediate Attention" : "At Risk"}
+                </Badge>
+              </Link>
+            ))}
+          </CardContent>
+        </Card>
+      )}
+
+      <Card>
         <CardHeader>
-          <CardTitle className="text-base">Get started</CardTitle>
+          <CardTitle className="text-base">Process pipeline funnel</CardTitle>
         </CardHeader>
         <CardContent>
-          <p className="text-sm text-muted-foreground">
-            Connect an email account under Settings to begin ingesting SupplyX
-            communications.
-          </p>
+          <PipelineFunnelChart data={funnelCounts} />
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">Urgency flags</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-2">
+          {urgentEmails.length === 0 && (
+            <p className="text-sm text-muted-foreground">No urgent emails right now.</p>
+          )}
+          {urgentEmails.map((email) => (
+            <div
+              key={email.id}
+              className="flex items-start justify-between gap-4 rounded-md border px-3 py-2 text-sm"
+            >
+              <div>
+                <p className="font-medium">{email.subject}</p>
+                <p className="text-muted-foreground">{email.email_analyses?.summary}</p>
+              </div>
+              <Badge variant="destructive" className="shrink-0">
+                {email.email_analyses?.urgency_score}/10
+              </Badge>
+            </div>
+          ))}
         </CardContent>
       </Card>
     </div>
