@@ -1,36 +1,50 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# PeakCorp Intelligence Platform
 
-## Getting Started
+Multi-entity business intelligence dashboard: ingests and semantically understands
+email communications across PeakCorp's companies, extracts actionable business
+intelligence, and surfaces it through entity-specific dashboards and an AI chat
+interface. Built per `PeakCorp_Intelligence_Platform_Build_Spec_1.docx`.
 
-First, run the development server:
+Entities: **SupplyX Inc** (full build, Phase 1+), Peak Foreclosure, Peak 1031
+Exchange, Grand Investment Group (placeholders until their own build phase).
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+## Stack
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Next.js (App Router, TypeScript strict) · Tailwind CSS + shadcn/ui · Zustand +
+TanStack Query · Supabase (Postgres + pgvector + Auth + Storage + Edge Functions) ·
+Anthropic Claude (chat + bulk classification) · Microsoft Graph / Gmail (email
+ingestion).
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Setup
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+1. `npm install`
+2. Create a Supabase project, then copy `.env.example` to `.env.local` and fill in
+   the Supabase, Anthropic, and OAuth provider credentials.
+3. `npx supabase link --project-ref <ref>` then `npx supabase db push` to run
+   `supabase/migrations/` (creates all tables, RLS policies, and enables pgvector)
+   and `supabase/seed.sql` (seeds the four entities).
+4. Follow [docs/OWNER_SETUP.md](docs/OWNER_SETUP.md) to invite Eli Tene and Gil
+   Priel as owner accounts.
+5. `npm run dev` — [http://localhost:3000](http://localhost:3000).
 
-## Learn More
+## Project layout
 
-To learn more about Next.js, take a look at the following resources:
+- `app/(auth)/login`, `app/auth/callback` — Supabase magic-link auth.
+- `app/(dashboard)/[entitySlug]` — entity-scoped dashboard shell; placeholder
+  entities render a "Coming soon" page instead of the full dashboard.
+- `lib/supabase/` — browser/server/service-role Supabase clients and the
+  session-refresh proxy helper.
+- `lib/entities.ts` — RLS-backed entity queries (owners see all, employees see
+  their own entity only).
+- `supabase/migrations/` — full schema: multi-tenant core, email integration, AI
+  processing (embeddings + analyses), SupplyX business tables, client satisfaction
+  intelligence, chat history, and the audit log.
+- `proxy.ts` — Next.js 16's renamed `middleware.ts`; refreshes the Supabase session
+  and gatekeeps unauthenticated requests.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Build phases
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+See the build spec for the full plan. Phase 0 (this scaffold) delivers the
+multi-tenant shell, auth, entity routing, DB schema, and an empty dashboard per
+entity. Phases 1-5 (email ingestion, AI processing, the full SupplyX dashboard,
+placeholder polish, and security hardening) follow.
