@@ -11,6 +11,7 @@ import {
   Truck,
   FileBarChart,
   Settings,
+  UserPlus,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -58,18 +59,30 @@ export function EntitySidebar({ slug, entityName }: { slug: string; entityName: 
           );
         })}
       </nav>
-      <div className="px-2 pb-4">
+      <div className="space-y-0.5 px-2 pb-4">
         <Link
           href={`${base}/settings/email`}
           className={cn(
             "flex items-center gap-2.5 rounded-md px-3 py-2 text-sm transition-colors",
-            pathname.startsWith(`${base}/settings`)
+            pathname.startsWith(`${base}/settings/email`)
               ? "bg-neutral-100 font-medium text-foreground dark:bg-neutral-800"
               : "text-muted-foreground hover:bg-neutral-50 hover:text-foreground dark:hover:bg-neutral-800/50",
           )}
         >
           <Settings className="size-4" />
-          Settings
+          Email Settings
+        </Link>
+        <Link
+          href={`${base}/settings/users`}
+          className={cn(
+            "flex items-center gap-2.5 rounded-md px-3 py-2 text-sm transition-colors",
+            pathname.startsWith(`${base}/settings/users`)
+              ? "bg-neutral-100 font-medium text-foreground dark:bg-neutral-800"
+              : "text-muted-foreground hover:bg-neutral-50 hover:text-foreground dark:hover:bg-neutral-800/50",
+          )}
+        >
+          <UserPlus className="size-4" />
+          Team
         </Link>
       </div>
     </aside>
